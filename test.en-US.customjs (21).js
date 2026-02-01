@@ -3704,7 +3704,8 @@
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#6c757d;margin-top:8px;padding-top:8px;border-top:1px solid #e9ecef;">
             <span>Total Items: <strong>${itemCount}</strong></span>
             <button type="button"
-              onclick="removeContainerCard('${escapeHtml(c.id)}')"
+              class="delete-container-btn"
+              data-container-id="${escapeHtml(c.id)}"
               style="background:#dc3545;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;"
               title="Remove container">
               Delete
@@ -3724,6 +3725,16 @@
         </div>
       `;
     }).join("");
+
+    // Attach delete button event listeners (CSP-compliant - no inline handlers)
+    grid.querySelectorAll(".delete-container-btn").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const containerId = this.dataset.containerId;
+        if (containerId) {
+          removeContainerCard(containerId);
+        }
+      });
+    });
 
   }
 
