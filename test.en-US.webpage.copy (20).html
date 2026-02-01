@@ -1,0 +1,2073 @@
+<!-- Top Loader -->
+<div id="top-loader" class="top-loader hidden" aria-hidden="true"></div>
+<div id="toast-container"></div>
+
+<section id="dcl-create" aria-labelledby="pageTitle" class="main-section">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <h1 id="pageTitle"><i aria-hidden="true" class="fas fa-file-alt"></i> DCL Management System</h1>
+    <p>Create and manage your Document Control Lists efficiently</p>
+  </div>
+
+  <div id="dclWizard" role="region" aria-label="DCL Wizard" class="wizard-container">
+    <!-- DCL Header -->
+    <div class="dcl-header">
+      <div class="dcl-info">
+        <h3>DCL Number</h3>
+        <p>Document Control List Reference</p>
+      </div>
+      <div class="dcl-number"><span id="dclNumber">-</span></div>
+    </div>
+
+    <!-- Progress Bar + Steps -->
+    <div aria-label="Progress" class="progress-container">
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+      <nav id="stepIndicators" aria-label="Steps" class="step-indicators">
+        <a href="/Basic_Information_View" data-step="1" class="step">
+          <div class="step-number">1</div>
+          <div class="step-label">Basic Info</div>
+        </a>
+        <a href="/loading_plan_view" data-step="2" aria-current="step" class="step active">
+          <div class="step-number">2</div>
+          <div class="step-label current">Loading Plan</div>
+        </a>
+        <a href="/DCL-Document-Generator" data-step="3" class="step">
+          <div class="step-number">3</div>
+          <div class="step-label">Document Generator</div>
+        </a>
+        <a href="/Upload_Center_Accruals" data-step="4" class="step">
+          <div class="step-number">4</div>
+          <div class="step-label">Upload Center</div>
+        </a>
+        <a href="/Review_Submit" data-step="5" class="step">
+          <div class="step-number">5</div>
+          <div class="step-label">Review &amp; Submit</div>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Step 2: Loading Plan -->
+    <div id="step2" role="region" aria-labelledby="lpTitle" class="step-content active">
+      <div class="step-header">
+        <h2 id="lpTitle"><i aria-hidden="true" class="fas fa-truck-loading"></i> Loading Plan</h2>
+        <p>Configure container specifications, order items, and loading plan</p>
+      </div>
+
+      <!-- Order Items -->
+      <div class="items-section">
+        <h3 class="section-title">Order Items</h3>
+
+        <div class="items-header">
+          <button type="button" id="addItemBtn" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Item
+          </button>
+          <button type="button" id="importFromOracleBtn" class="btn btn-outline">
+            <i class="fas fa-file-import"></i> Import from Oracle
+          </button>
+
+        </div>
+
+        <div class="items-table-container" id="itemsTableContainer">
+          <table id="itemsTable" class="items-table">
+            <thead>
+              <tr>
+                <th align="center">S/N</th>
+                <th align="center">Edit</th>
+                <th align="center">Order #</th>
+                <th align="center">Item Code</th>
+                <th align="center">Item Description</th>
+                <th align="center">Released</th>
+                <th align="center">Packaging</th>
+                <th align="center">UOM</th>
+                <th align="center">PACK</th>
+                <th align="center">Order Qty.</th>
+                <th align="center">Loading Qty.</th>
+                <th align="center">Pending Qty.</th>
+                <th align="center">Palletized</th>
+                <th align="center"># Pallets</th>
+                <th align="center">Pallets Weights</th>
+                <th align="center">Total L/Kgs</th>
+                <th align="center">Net Weight (Kgs)</th>
+                <th align="center">Gross Weight (Kgs)</th>
+                <th align="center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="itemsTableBody">
+              <tr class="row">
+                <td class="cell" align="left" valign="middle"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Summary -->
+        <div class="items-summary">
+          <div class="summary-item">
+            <span class="summary-label">Total Items:</span>
+            <span id="totalItems" class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Total Order Qty:</span>
+            <span id="totalOrderQty" class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Total Loading Qty:</span>
+            <span id="totalLoadingQty" class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Total Net Weight:</span>
+            <span id="totalNetWeight" class="summary-value">0 kg</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Total Gross Weight:</span>
+            <span id="totalGrossWeight" class="summary-value">0 kg</span>
+          </div>
+        </div>
+
+        <!-- Backward compatibility spans -->
+        <div class="hidden">
+          <span id="totalQuantity">0</span>
+          <span id="totalWeight">0</span>
+        </div>
+      </div>
+
+      <!-- Allocation Status Section -->
+      <section id="allocationStatusSection" class="allocation-status-section" style="display: none;">
+        <div class="status-header">
+          <h4><i class="fas fa-clipboard-check"></i> Allocation Status</h4>
+        </div>
+        <div id="statusContent" class="status-content"></div>
+      </section>
+
+      <!-- STEP 1: Add Containers -->
+      <div class="wizard-step" id="step1Container">
+        <div class="step-header">
+          <div class="step-number">1</div>
+          <div class="step-info">
+            <h3 class="step-title">Add Containers</h3>
+            <p class="step-description">Select container type and quantity to add to your shipment</p>
+          </div>
+        </div>
+
+        <div class="step-content">
+          <!-- Container Input Form -->
+          <div class="container-input-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="containerTypeSelect">
+                  <i class="fas fa-box"></i> Container Type
+                </label>
+                <select id="containerTypeSelect" class="form-control">
+                  <option value="">Select container type...</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="containerQtyInput">
+                  <i class="fas fa-hashtag"></i> Quantity
+                </label>
+                <input type="number" id="containerQtyInput" class="form-control" value="1" min="1" max="100">
+              </div>
+              <div class="form-group" style="align-self: flex-end;">
+                <button type="button" id="addContainerBtn" class="btn-wizard-success">
+                  <i class="fas fa-plus-circle"></i> Add Container
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Current Containers Grid -->
+          <div class="current-containers-section">
+            <h4 class="subsection-title">
+              Current Containers (<span id="containerCount">0</span>)
+            </h4>
+            <div id="containerCardsGrid" class="container-cards-grid">
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>No containers added yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Assign Items to Containers -->
+      <div class="wizard-step" id="step2Assignment">
+        <div class="step-header">
+          <div class="step-number">2</div>
+          <div class="step-info">
+            <h3 class="step-title">Assign Items to Containers</h3>
+            <p class="step-description">Manually assign each item or use auto-assignment</p>
+          </div>
+        </div>
+
+
+        <!-- FG Master Dimensions Modal -->
+        <div id="fgDimensionsModal" class="modal" style="display:none;">
+          <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+              <h3>Complete FG Master Data</h3>
+              <button type="button" class="close-btn" onclick="closeFgDimensionsModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+              <!-- Item Info -->
+              <div style="background:#f8f9fa;padding:12px;border-radius:4px;margin-bottom:16px;">
+                <div style="margin-bottom:8px;">
+                  <strong>Product:</strong>
+                  <div id="fgModalDescription" style="color:#666;font-size:14px;"></div>
+                </div>
+                <div>
+                  <strong>Packaging:</strong>
+                  <div id="fgModalPackaging" style="color:#666;font-size:14px;"></div>
+                </div>
+              </div>
+
+              <!-- FG Match Info (shown only when updating existing FG) -->
+              <div id="fgModalMatchInfo"
+                style="display:none;background:#d1f2eb;padding:10px;border-radius:4px;margin-bottom:16px;">
+                <strong style="color:#0c5460;">Updating Existing FG Master:</strong>
+                <div id="fgModalMatchName" style="color:#155724;font-size:14px;margin-top:4px;"></div>
+              </div>
+
+              <form onsubmit="saveFgDimensions(event)">
+                <!-- ✅ NEW: Brand Field -->
+                <div style="margin-bottom: 16px;">
+                  <label style="display:block;margin-bottom:4px;font-weight:500;">
+                    Brand <span style="color:red;">*</span>
+                  </label>
+                  <select id="fgBrand" required style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;">
+                    <option value="">Select brand...</option>
+                    <option value="PETROMIN">PETROMIN</option>
+                    <option value="PETRONAS">PETRONAS</option>
+                    <option value="ADNOC">ADNOC</option>
+                    <option value="NATIONAL">NATIONAL</option>
+                    <option value="VOYAGER">VOYAGER</option>
+                    <option value="CROWN">CROWN</option>
+                    <option value="DUCKHAMS">DUCKHAMS</option>
+                    <option value="SPEEDX">SPEEDX</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+
+                <!-- Dimensions -->
+                <div style="margin-bottom: 16px;">
+                  <label style="display:block;margin-bottom:4px;font-weight:500;">
+                    Carton Dimensions (mm) <span style="color:red;">*</span>
+                  </label>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                    <input type="number" id="fgLength" required placeholder="Length"
+                      style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+                    <input type="number" id="fgWidth" required placeholder="Width"
+                      style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+                    <input type="number" id="fgHeight" required placeholder="Height"
+                      style="padding:8px;border:1px solid #ddd;border-radius:4px;">
+                  </div>
+                  <div style="font-size:11px;color:#666;margin-top:4px;">
+                    Enter L × W × H in millimeters
+                  </div>
+                </div>
+
+                <!-- Hidden Weight Fields (auto-calculated) -->
+                <input type="hidden" id="fgGrossWeight">
+                <input type="hidden" id="fgNetWeight">
+
+                <!-- Info Message -->
+                <div style="background:#e7f3ff;padding:10px;border-radius:4px;margin-bottom:16px;">
+                  <div style="font-size:12px;color:#004085;">
+                    <i class="fas fa-info-circle"></i>
+                    Weights are auto-calculated from Loading Plan data. Enter brand and carton dimensions only.
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                  <button type="button" onclick="skipFgDimensions()"
+                    style="padding:10px 20px;background:#6c757d;color:white;border:none;border-radius:4px;cursor:pointer;">
+                    Skip (Use Estimate)
+                  </button>
+                  <button type="submit"
+                    style="padding:10px 20px;background:#28a745;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:500;">
+                    <i class="fas fa-save"></i> Save FG Master Data
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="step-content">
+          <!-- Action Buttons -->
+          <div class="assignment-actions">
+            <!-- Start from scratch (DESTRUCTIVE) -->
+            <button type="button" id="startAllocationBtn" class="btn-wizard-primary">
+              <i class="fas fa-play"></i> Start Allocation
+            </button>
+
+            <!-- Auto-assign items to containers -->
+            <button type="button" id="autoAssignBtn" class="btn-wizard-primary">
+              <i class="fas fa-magic"></i> Auto-Assign All Items
+            </button>
+
+            <!-- ✅ UPDATE BUTTON - Add missing items (NON-DESTRUCTIVE) -->
+            <button type="button" id="updateAllocationBtn" class="btn-wizard-primary">
+              <i class="fas fa-sync-alt"></i> Update Items
+            </button>
+
+            <!-- Reset assignments (hidden by default) -->
+            <button type="button" id="resetAssignmentsBtn" class="btn-wizard-secondary" style="display: none;">
+              <i class="fas fa-undo"></i> Reset All Assignments
+            </button>
+          </div>
+
+          <!-- Assignment Table -->
+          <div class="assignment-table-container">
+            <table id="assignmentTable" class="assignment-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Item Code</th>
+                  <th>Description</th>
+                  <th>Loading Qty</th>
+                  <th>Gross Weight (kg)</th>
+                  <th>Volume (L)</th>
+                  <th>Assign To Container</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="assignmentTableBody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+
+
+    </div>
+
+    <!-- Container Recommendation (for capacity warnings) -->
+    <div id="containerRecommendation" class="mb-section"></div>
+
+    <!-- Additional Comments on Loading Plan -->
+    <div class="lp-comments-section">
+      <h3 class="lp-comments-title">
+        <i class="fas fa-comment-dots"></i>
+        Additional Comments on the Loading Plan
+      </h3>
+
+      <div class="form-group">
+        <label for="lpAdditionalComments" class="lp-comments-label">
+          Comments
+        </label>
+        <textarea id="lpAdditionalComments" rows="4" class="lp-comments-textarea"
+          placeholder="Enter any additional comments about the loading plan that should appear in the generated document...">
+    </textarea>
+
+        <div class="lp-comments-info">
+          <small class="lp-comments-note">
+            <i class="fas fa-info-circle"></i>
+            These comments will be included in the generated Loading Plan document. Auto-saved after typing.
+          </small>
+          <small id="lpCommentsSaveIndicator" class="lp-comments-save">
+            ✓ Saved
+          </small>
+        </div>
+      </div>
+
+      <div class="lp-comments-counter">
+        <small class="lp-comments-count">
+          <span id="lpCommentsCharCount">0</span> characters
+        </small>
+      </div>
+    </div>
+
+    <!-- Loading Plan Generation -->
+    <div class="document-card">
+      <!-- Loading Plan -->
+      <article class="doc-card" aria-labelledby="lpTitle">
+        <header class="doc-head">
+          <div class="doc-icon" aria-hidden="true">
+            <i class="fas fa-truck-loading"></i>
+          </div>
+          <h3 id="lpTitle">Loading Plan</h3>
+          <p>Generate container loading plan</p>
+        </header>
+
+        <div class="doc-body">
+          <div class="doc-lang" role="radiogroup" aria-label="Loading Plan language">
+            <label>
+              <input type="radio" name="lp_language" value="english" checked>
+              <span>English</span>
+            </label>
+          </div>
+
+          <!-- Warning for regeneration -->
+          <div id="lpWarning" class="doc-warning hidden" role="alert">
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            <span>Please close all open tabs of this document before regenerating</span>
+          </div>
+        </div>
+
+        <footer class="doc-actions">
+          <button data-doc="lp" id="generateLP" class="btn btn-primary" type="button">
+            <i class="fas fa-file-pdf" aria-hidden="true"></i> Generate LP
+          </button>
+          <button data-preview="lp" class="btn btn-outline" type="button">
+            <i class="fas fa-eye" aria-hidden="true"></i> Preview
+          </button>
+        </footer>
+      </article>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <nav aria-label="Wizard navigation" class="navigation-buttons">
+      <a href="/Basic_Information_View" rel="prev" class="btn btn-outline">
+        <i aria-hidden="true" class="fas fa-arrow-left"></i> Previous
+      </a>
+      <button type="button" id="saveAndNextBtn" class="btn btn-primary">
+        <i class="fas fa-save"></i> Save & Next <i class="fas fa-arrow-right"></i>
+      </button>
+    </nav>
+  </div>
+</section>
+
+<div class="row sectionBlockLayout text-start">
+  <div class="container">
+    <div class="col-lg-12 columnBlockLayout"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script>
+  (function () {
+    const BTN_SEL = '#generateLP';
+
+    // --- Endpoints ---
+    const API_URL_MASTER = "/_api/cr650_dcl_masters";
+    const API_URL_CONTAINERS = "/_api/cr650_dcl_containers";
+    const API_URL_ITEMS = "/_api/cr650_dcl_container_itemses";
+    const API_URL_LOADPLANS = "/_api/cr650_dcl_loading_plans";
+    const API_URL_DOCS = "/_api/cr650_dcl_documents";
+    const API_URL_ADDITIONAL = "/_api/cr650_dcl_additional_detailses";
+
+    const FLOW_URL = "https://5d4ad4612f8beb7ead61b88cce63d5.4e.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/41a79329e87f400fa632ea4e374e8eb0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=EjqKzb2Ezk_4WSJ6yxrLA61AjOOlwvy7Y9usBb66K94";
+
+    // --- Fields ---
+    const FIELDS = {
+      id: "cr650_dcl_masterid",
+      dclNumber: "cr650_dclnumber",  // ✅ ADD THIS LINE
+
+      customer: "cr650_customername",
+      country: "cr650_country",
+      loadingDate: "cr650_loadingdate",
+      loadingTime: "cr650_loadingtime",
+      shippingLine: "cr650_shippingline",
+      loadingType: "cr650_loading_type",
+      loadingShift: "cr650_loading_shift",
+      piNumber: "cr650_pinumber",
+      ciNumber: "cr650_ci_number",
+      companyType: "cr650_company_type",
+      sailingDate: "cr650_sailing_date",
+      lpComments: "cr650_additionalco_lp"  // ✅ ADD THIS LINE
+
+
+    };
+
+    const C_FIELDS = {
+      id: "cr650_dcl_containerid",
+      code: "cr650_id",
+      createdOn: "createdon",
+      dclLookup: "_cr650_dcl_number_value",
+      type: "cr650_container_type"
+    };
+
+    const I_FIELDS = {
+      id: "cr650_dcl_container_itemsid",
+      containerLkp: "_cr650_dcl_number_value",
+      planLkp: "_cr650_loadingplanitem_value",
+      itemCode: "cr650_itemcode",
+      qty: "cr650_quantity",
+      createdOn: "createdon"
+    };
+
+    const L_FIELDS = {
+      id: "cr650_dcl_loading_planid",
+      orderNo: "cr650_ordernumber",
+      productId: "cr650_itemcode",
+      description: "cr650_itemdescription",
+      packaging: "cr650_packagingdetails",
+      uom: "cr650_unitofmeasure",
+      totalLiters: "cr650_loadedquantity",
+      netKg: "cr650_netweightkg",
+      grossKg: "cr650_grossweightkg",
+      palletCount: "cr650_palletcount",
+      palletWeight: "cr650_palletweight",
+      containerNo: "cr650_containernumber",
+      createdOn: "createdon"
+    };
+
+    const D_FIELDS = {
+      id: "cr650_dcl_documentid",
+      url: "cr650_documenturl",
+      type: "cr650_doc_type",
+      dclLkp: "_cr650_dcl_number_value",
+      createdOn: "createdon"
+    };
+
+    // --- Brand / layout tokens ---
+    const BRAND_GREEN = "2f6627", BRAND_RED = "c41e3a", TEXT_PRIMARY = "333333", TEXT_SECONDARY = "666666";
+    const HEADER_BG = "feffcf", BAND_BG = "dbf2d2";
+
+    // Petrolube logos (existing)
+    const PETROLUBE_EN_LOGO_URL = "https://exportoperationsystem.powerappsportals.com/loading_plan_view/petrolube_english.jpg";
+    const PETROLUBE_AR_LOGO_URL = "https://exportoperationsystem.powerappsportals.com/loading_plan_view/petrolube_arabic.jpg";
+
+    // Technolube logos (new)
+    const TECHNOLUBE_LOGO_URL = "https://exportoperationsystem.powerappsportals.com/loading_plan_view/technolube_logo.jpeg"; // Update with actual direct URL
+    const TECHNOLUBE_FOOTER_LOGO_URL = "https://exportoperationsystem.powerappsportals.com/loading_plan_view/Footer_technolube.jpg"; // Update with actual direct URL
+
+    // Preload all logo images on page load to ensure they are cached
+    const ALL_LOGO_URLS = [
+      PETROLUBE_EN_LOGO_URL,
+      PETROLUBE_AR_LOGO_URL,
+      TECHNOLUBE_LOGO_URL,
+      TECHNOLUBE_FOOTER_LOGO_URL
+    ];
+
+    function preloadImages() {
+      ALL_LOGO_URLS.forEach(url => {
+        const img = new Image();
+        img.src = url;
+      });
+      console.log("✅ Logo images preloaded");
+    }
+
+    // Preload images immediately
+    preloadImages();
+
+    const PAGE_WIDTH_TWIPS = 12240, LEFT_MARGIN_TWIPS = 720, RIGHT_MARGIN_TWIPS = 720;
+    const CONTENT_WIDTH_TWIPS = PAGE_WIDTH_TWIPS - LEFT_MARGIN_TWIPS - RIGHT_MARGIN_TWIPS;
+
+    // --- Utils ---
+    function showTopLoader() {
+      const el = document.getElementById("top-loader");
+      if (el) {
+        el.classList.remove("hidden");
+        el.style.display = "block";
+      }
+    }
+    function hideTopLoader() {
+      const el = document.getElementById("top-loader");
+      if (el) {
+        el.classList.add("hidden");
+        el.style.display = "none";
+      }
+    }
+
+    function blurPage() {
+      // Blur the document card
+      const docCard = document.querySelector('.document-card');
+      if (docCard) {
+        docCard.classList.add('blur-while-loading');
+      }
+
+
+    }
+
+
+    function unblurPage() {
+      // Remove blur from document card
+      const docCard = document.querySelector('.document-card');
+      if (docCard) {
+        docCard.classList.remove('blur-while-loading');
+      }
+
+      // Optionally remove blur from entire page (if you used it above)
+      // const mainContent = document.querySelector('main') || document.body;
+      // if (mainContent) {
+      //   mainContent.classList.remove('blur-while-loading');
+      // }
+    }
+    function getQueryParam(n) { return new URLSearchParams(location.search).get(n); }
+    function resolveDclId() {
+      const qs = getQueryParam("id");
+      if (qs) return qs;
+      const el = document.querySelector("[data-dclid]");
+      if (el?.getAttribute("data-dclid")) return el.getAttribute("data-dclid");
+      const last = (location.pathname.split("/").filter(Boolean).pop() || "");
+      if (/^[0-9a-fA-F-]{36}$/.test(last)) return last;
+      return null;
+    }
+    function nil(x, f = "") { return (x === null || x === undefined || x === "") ? f : x; }
+    function fmtDateLong(d) {
+      try {
+        if (!d) return "";
+        if (/^\/Date\(\d+\)\/$/.test(d)) {
+          const ms = +d.match(/\d+/)[0];
+          return new Date(ms).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric"
+          });
+        }
+        const dt = new Date(d);
+        if (isNaN(dt)) return String(d);
+        return dt.toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric"
+        });
+      } catch {
+        return String(d);
+      }
+    }
+    function fmtNum(n, dec = 2) {
+      if (n === null || n === undefined || n === "") return "";
+      const v = typeof n === "string" ? Number(String(n).replace(/,/g, "")) : Number(n);
+      if (isNaN(v)) return String(n);
+      return v.toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+
+    function fmtInvoiceDate(d) {
+      try {
+        if (!d) return "";
+        let dt;
+        if (/^\/Date\(\d+\)\/$/.test(d)) {
+          const ms = +d.match(/\d+/)[0];
+          dt = new Date(ms);
+        } else {
+          dt = new Date(d);
+        }
+        if (isNaN(dt)) return "";
+
+        const weekday = dt.toLocaleDateString("en-US", { weekday: "long" });
+        const day = dt.getDate();
+        const month = dt.toLocaleDateString("en-US", { month: "long" });
+        const year = dt.getFullYear();
+
+        // Result: "Invoice Date: Thursday 4 December 2025"
+        return `${weekday} ${day} ${month} ${year}`;
+      } catch {
+        return "";
+      }
+    }
+
+    const ord = (i) => { const s = ["th", "st", "nd", "rd"], v = i % 100; return i + (s[(v - 20) % 10] || s[v] || s[0]); };
+
+    function getSelectedLpLanguage() {
+      const sel = document.querySelector('input[name="lp_language"]:checked');
+      const raw = (sel?.value || "english").toLowerCase();
+      if (raw.startsWith("ar")) return "AR";
+      return "EN";
+    }
+
+    // --- Helper to determine company type ---
+    function getCompanyType(masterRec) {
+      const val = masterRec[FIELDS.companyType];
+      // 0 = Technolube, 1 = Petrolube
+      if (val === 0 || val === "0") return "TECHNOLUBE";
+      if (val === 1 || val === "1") return "PETROLUBE";
+      return "PETROLUBE"; // default
+    }
+
+    // --- safeAjax ---
+    function ensureSafeAjax() {
+      if (typeof window.safeAjax === "function") return;
+      window.safeAjax = (options) => new Promise((resolve, reject) => {
+        try {
+          const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+          const headers = Object.assign({
+            "Accept": "application/json",
+            "Content-Type": "application/json; charset=utf-8",
+            "OData-MaxVersion": "4.0",
+            "OData-Version": "4.0",
+            "x-requested-with": "XMLHttpRequest"
+          }, options.headers || {});
+          if (tokenEl?.value) headers["__RequestVerificationToken"] = tokenEl.value;
+
+          if (window.jQuery?.ajax) {
+            jQuery.ajax({
+              url: options.url,
+              type: options.type || "GET",
+              data: options.data || null,
+              contentType: options.contentType || "application/json; charset=utf-8",
+              headers,
+              xhrFields: options.xhrFields || { withCredentials: true }
+            })
+              .done(resolve)
+              .fail(x => reject(new Error(x?.responseText || x?.statusText || x?.status)));
+          } else {
+            fetch(options.url, {
+              method: options.type || "GET",
+              headers,
+              credentials: "same-origin",
+              body: options.data || null
+            })
+              .then(async r => {
+                const t = await r.text();
+                if (!r.ok) throw new Error(t || r.statusText);
+                try { return JSON.parse(t); } catch { return t; }
+              })
+              .then(resolve)
+              .catch(reject);
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+
+    // --- Select builders ---
+    const selectMaster = () => [
+      FIELDS.id,
+      FIELDS.dclNumber,  // ✅ ADD THIS LINE
+
+      FIELDS.customer,
+      FIELDS.country,
+      FIELDS.loadingDate,
+      FIELDS.loadingTime,
+      FIELDS.shippingLine,
+      FIELDS.loadingType,
+      FIELDS.loadingShift,
+      FIELDS.piNumber,
+      FIELDS.ciNumber,
+      FIELDS.companyType,
+      FIELDS.sailingDate,
+      FIELDS.lpComments  // ✅ ADD THIS LINE
+
+    ].join(",");
+
+    const selectContainers = () => [
+      C_FIELDS.id,
+      C_FIELDS.code,
+      C_FIELDS.createdOn,
+      C_FIELDS.dclLookup,
+      C_FIELDS.type
+    ].join(",");
+
+    const selectItems = () => [
+      I_FIELDS.id,
+      I_FIELDS.containerLkp,
+      I_FIELDS.planLkp,
+      I_FIELDS.itemCode,
+      I_FIELDS.qty,
+      I_FIELDS.createdOn
+    ].join(",");
+
+    const selectLoadPlans = () => [
+      L_FIELDS.id,
+      L_FIELDS.orderNo,
+      L_FIELDS.productId,
+      L_FIELDS.description,
+      L_FIELDS.packaging,
+      L_FIELDS.uom,
+      L_FIELDS.totalLiters,
+      L_FIELDS.netKg,
+      L_FIELDS.grossKg,
+      L_FIELDS.palletCount,      // ✅ NEW
+      L_FIELDS.palletWeight,     // ✅ NEW
+      L_FIELDS.containerNo,
+      L_FIELDS.createdOn
+    ].join(",");
+
+    // --- Fetchers ---
+    async function fetchDclById(id) {
+      ensureSafeAjax();
+      const base = `${API_URL_MASTER}?$select=${encodeURIComponent(selectMaster())}`;
+      for (const url of [
+        `${base}&$filter=${FIELDS.id} eq ${id}`,
+        `${base}&$filter=${FIELDS.id} eq '${id}'`
+      ]) {
+        try {
+          const r = await window.safeAjax({ url });
+          if (r?.value?.length) return r.value[0];
+        } catch { }
+      }
+      throw new Error("No DCL record for id=" + id);
+    }
+
+    async function fetchContainersByDclId(dclId) {
+      ensureSafeAjax();
+      const sel = encodeURIComponent(selectContainers());
+      const base = `${API_URL_CONTAINERS}?$select=${sel}&$orderby=${C_FIELDS.createdOn} asc`;
+      for (const url of [
+        `${base}&$filter=${C_FIELDS.dclLookup} eq ${dclId}`,
+        `${base}&$filter=${C_FIELDS.dclLookup} eq '${dclId}'`
+      ]) {
+        try {
+          const r = await window.safeAjax({ url });
+          if (Array.isArray(r?.value)) return r.value;
+        } catch { }
+      }
+      return [];
+    }
+
+    async function fetchItemsByContainerId(containerId) {
+      ensureSafeAjax();
+      const sel = encodeURIComponent(selectItems());
+      const base = `${API_URL_ITEMS}?$select=${sel}&$orderby=${I_FIELDS.createdOn} asc`;
+      for (const url of [
+        `${base}&$filter=${I_FIELDS.containerLkp} eq ${containerId}`,
+        `${base}&$filter=${I_FIELDS.containerLkp} eq '${containerId}'`
+      ]) {
+        try {
+          const r = await window.safeAjax({ url });
+          if (Array.isArray(r?.value)) return r.value;
+        } catch { }
+      }
+      return [];
+    }
+
+    async function fetchLoadPlanById(planId) {
+      ensureSafeAjax();
+      const sel = encodeURIComponent(selectLoadPlans());
+      const base = `${API_URL_LOADPLANS}?$select=${sel}`;
+      for (const url of [
+        `${base}&$filter=${L_FIELDS.id} eq ${planId}`,
+        `${base}&$filter=${L_FIELDS.id} eq '${planId}'`
+      ]) {
+        try {
+          const r = await window.safeAjax({ url });
+          if (r?.value?.length) return r.value[0];
+        } catch { }
+      }
+      return null;
+    }
+
+    async function fetchPlansForItems(items) {
+      const uniq = [...new Set(items.map(it => it[I_FIELDS.planLkp]).filter(Boolean))];
+      const out = {};
+      await Promise.all(uniq.map(async id => {
+        const rec = await fetchLoadPlanById(id);
+        if (rec) out[id] = rec;
+      }));
+      return out;
+    }
+
+    async function fetchItemsAndPlansForContainers(containers) {
+      const itemsByContainer = {};
+      const plansByContainer = {};
+      await Promise.all(containers.map(async c => {
+        const cid = c[C_FIELDS.id];
+        const items = await fetchItemsByContainerId(cid);
+
+        // 🔍 DEBUG: Log container items
+        console.log("📦 Container ID:", cid);
+        console.log("📦 Items found:", items.length);
+        items.forEach((item, idx) => {
+          console.log(`   Item ${idx + 1}:`, {
+            qty: item[I_FIELDS.qty],
+            planLookup: item[I_FIELDS.planLkp],
+            itemCode: item[I_FIELDS.itemCode],
+            allFields: item
+          });
+        });
+
+        itemsByContainer[cid] = items;
+        plansByContainer[cid] = await fetchPlansForItems(items);
+
+        // 🔍 DEBUG: Log retrieved plans
+        console.log("📋 Plans retrieved for container:", plansByContainer[cid]);
+      }));
+      return { itemsByContainer, plansByContainer };
+    }
+
+    async function fetchAdditionalDetails(dclId) {
+      ensureSafeAjax();
+      const url = `${API_URL_ADDITIONAL}?$filter=_cr650_dclreference_value eq ${dclId}`;
+      try {
+        const r = await window.safeAjax({ url });
+        if (r?.value?.length > 0) {
+          console.log("✅ Fetched Additional Details:", r.value[0]);
+          return r.value[0];
+        }
+      } catch (err) {
+        console.warn("Could not fetch additional details:", err);
+      }
+      return null;
+    }
+
+    async function findExistingLPDoc(dclId) {
+      ensureSafeAjax();
+      const select = [
+        D_FIELDS.id,
+        D_FIELDS.url,
+        D_FIELDS.type,
+        D_FIELDS.dclLkp,
+        D_FIELDS.createdOn
+      ].join(",");
+      const base = `${API_URL_DOCS}?$select=${encodeURIComponent(select)}&$orderby=${D_FIELDS.createdOn} desc&$top=10`;
+      const candidates = [];
+      for (const filter of [
+        `${D_FIELDS.dclLkp} eq guid('${dclId}')`,
+        `${D_FIELDS.dclLkp} eq '${dclId}'`
+      ]) {
+        try {
+          const r = await window.safeAjax({ url: `${base}&$filter=${encodeURIComponent(filter)}` });
+          if (Array.isArray(r?.value)) candidates.push(...r.value);
+        } catch { }
+        if (candidates.length) break;
+      }
+      if (!candidates.length) return null;
+      for (const rec of candidates) {
+        const t = String(rec[D_FIELDS.type] || "").trim().toLowerCase();
+        const url = rec[D_FIELDS.url];
+        if (t === "loading plan" && url) return { url, rec };
+      }
+      return null;
+    }
+
+    // --- docx helpers ---
+    async function loadDocxOnce() {
+      if (window.docx?.Packer) return;
+      await new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "https://unpkg.com/docx@8.5.0/build/index.js";
+        s.async = true;
+        s.onload = res;
+        s.onerror = () => rej(new Error("Failed to load docx"));
+        document.head.appendChild(s);
+      });
+      if (!window.docx?.Packer) throw new Error("docx library not available.");
+    }
+
+    async function fetchArrayBuffer(url) {
+      const r = await fetch(url, { credentials: "omit" });
+      if (!r.ok) throw new Error("Logo fetch failed");
+      return r.arrayBuffer();
+    }
+
+    async function buildDocHeader(masterRec, containers) {
+      const {
+        Header, Paragraph, TextRun, Table, TableRow, TableCell,
+        WidthType, BorderStyle, VerticalAlign, AlignmentType,
+        ShadingType, ImageRun, HeightRule, TableLayoutType, TabStopType
+      } = window.docx;
+
+      const companyType = getCompanyType(masterRec);
+      const n = () => ({ style: BorderStyle.NONE });
+      const none = { top: n(), bottom: n(), left: n(), right: n() };
+
+      let logosLine;
+
+      if (companyType === "TECHNOLUBE") {
+        let techLogoBuf = null;
+        try { techLogoBuf = await fetchArrayBuffer(TECHNOLUBE_LOGO_URL); } catch { }
+
+        logosLine = new Paragraph({
+          alignment: AlignmentType.LEFT,
+          spacing: { after: 120 },
+          children: [
+            ...(techLogoBuf ? [
+              new ImageRun({
+                data: techLogoBuf,
+                transformation: {
+                  width: 280,   // ⬅️ logo size (adjust if needed)
+                  height: 90
+                }
+              })
+            ] : []),
+
+            // small horizontal space between logo and text
+            new TextRun({
+              text: "   "
+            }),
+
+            // Loading Plan text next to logo
+            new TextRun({
+              text: "Loading Plan",
+              bold: true,
+              size: 32,
+              color: TEXT_PRIMARY,
+              font: "Arial"
+            })
+          ]
+        });
+      }
+      else {
+        // Petrolube: both logos (EN left, AR right)
+        let enLogoBuf = null, arLogoBuf = null;
+        try { enLogoBuf = await fetchArrayBuffer(PETROLUBE_EN_LOGO_URL); } catch { }
+        try { arLogoBuf = await fetchArrayBuffer(PETROLUBE_AR_LOGO_URL); } catch { }
+
+        logosLine = new Paragraph({
+          alignment: AlignmentType.JUSTIFIED,
+          tabStops: [{ type: TabStopType.RIGHT, position: CONTENT_WIDTH_TWIPS }],
+          children: [
+            ...(enLogoBuf
+              ? [new ImageRun({ data: enLogoBuf, transformation: { width: 150, height: 67.5 } })]
+              : []),
+            new TextRun({ text: "\t" }),
+            ...(arLogoBuf
+              ? [new ImageRun({ data: arLogoBuf, transformation: { width: 150, height: 67.5 } })]
+              : [])
+          ]
+        });
+      }
+
+      // Title paragraph for Petrolube (Loading Plan title)
+      const titleParagraph = new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 120, after: 60 },
+        children: [
+          new TextRun({
+            text: "Loading Plan",
+            bold: true,
+            size: 32,
+            color: TEXT_PRIMARY,
+            font: "Arial"
+          })
+        ]
+      });
+
+      // Company Type Badge
+      const companyBadgeColor = companyType === "PETROLUBE" ? BRAND_GREEN : BRAND_RED;
+      const companyBadge = new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 60, after: 120 },
+        children: [
+          new TextRun({
+            text: companyType,
+            bold: true,
+            size: 20,
+            color: "FFFFFF",
+            font: "Arial",
+            shading: {
+              type: ShadingType.SOLID,
+              color: "FFFFFF",
+              fill: companyBadgeColor
+            }
+          })
+        ]
+      });
+
+      const LINE_DOUBLE = 480;
+      const label = t => new TextRun({
+        text: t ? t + ": " : "",
+        bold: !!t,
+        size: 18,
+        color: TEXT_PRIMARY,
+        font: "Arial"
+      });
+      const val = t => new TextRun({
+        text: String(t ?? ""),
+        size: 18,
+        color: TEXT_SECONDARY,
+        font: "Arial"
+      });
+      const kv = (k, v) => new Paragraph({
+        spacing: { line: LINE_DOUBLE, lineRule: "AUTO" },
+        children: [label(k), val(v)]
+      });
+
+      const customerName = nil(masterRec[FIELDS.customer], "");
+      const country = nil(masterRec[FIELDS.country], "");
+      const customerWithCountry = country
+        ? `${customerName} (${country})`
+        : customerName;
+
+      const loadingDateText = fmtDateLong(masterRec[FIELDS.loadingDate]);
+
+      const loadingType = String(masterRec[FIELDS.loadingType] || "").trim();
+      let loadingTimeText = "";
+      if (loadingType === "Shift") {
+        loadingTimeText = nil(masterRec[FIELDS.loadingShift], "");
+      } else if (loadingType === "Specific Time") {
+        loadingTimeText = nil(masterRec[FIELDS.loadingTime], "");
+      } else {
+        loadingTimeText = nil(
+          masterRec[FIELDS.loadingTime] || masterRec[FIELDS.loadingShift],
+          ""
+        );
+      }
+      const sailingDateText = fmtInvoiceDate(masterRec[FIELDS.sailingDate]);
+
+
+      function mapContainerType(raw) {
+        if (raw === null || raw === undefined || raw === "") return "";
+        const s = String(raw).trim();
+        const num = Number(s);
+        if (!Number.isNaN(num)) {
+          switch (num) {
+            case 1: return "20 ft";
+            case 2: return "40 ft";
+            case 3: return "Trucks";
+            case 4: return "Bulk Tanker";
+          }
+        }
+        const lower = s.toLowerCase();
+        if (lower === "1" || lower.includes("20")) return "20 ft";
+        if (lower === "2" || lower.includes("40")) return "40 ft";
+        if (lower === "3" || lower.includes("truck")) return "Trucks";
+        if (lower === "4" || lower.includes("bulk")) return "Bulk Tanker";
+        return s;
+      }
+
+      const containerCount = Array.isArray(containers) ? containers.length : 0;
+      const sizeLabels = Array.isArray(containers)
+        ? [...new Set(
+          containers
+            .map(c => mapContainerType(c[C_FIELDS.type]))
+            .filter(Boolean)
+        )]
+        : [];
+      const containerSizesText = sizeLabels.join(", ");
+
+      const piNumber = nil(masterRec[FIELDS.piNumber], "");
+      const ciNumber = nil(masterRec[FIELDS.ciNumber], "");
+      const shippingLine = nil(masterRec[FIELDS.shippingLine], "");
+
+      const halfWidth = Math.floor(CONTENT_WIDTH_TWIPS / 2);
+
+      const kvRows = new Table({
+        width: { size: CONTENT_WIDTH_TWIPS, type: WidthType.DXA },
+        layout: TableLayoutType.FIXED,
+        columnWidths: [halfWidth, halfWidth],
+        borders: {
+          top: n(), bottom: n(), left: n(), right: n(),
+          insideHorizontal: n(), insideVertical: n()
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: halfWidth, type: WidthType.DXA },
+                borders: none,
+                children: [kv("Customer", customerWithCountry)]
+              }),
+              new TableCell({
+                width: { size: halfWidth, type: WidthType.DXA },
+                borders: none,
+                children: [kv("Country", country)]
+              })
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: halfWidth, type: WidthType.DXA },
+                borders: none,
+                children: [kv("Loading Date", loadingDateText)]
+              }),
+              new TableCell({
+                width: { size: halfWidth, type: WidthType.DXA },
+                borders: none,
+                children: [kv("Loading Time", loadingTimeText)]
+              })
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: halfWidth, type: WidthType.DXA },
+                borders: none,
+                children: [kv("Container Size", containerSizesText)]
+              }),
+              new TableCell({
+                width: { size: halfWidth, type: WidthType.DXA },
+                borders: none,
+                children: [
+                  kv("Container Number", containerCount ? String(containerCount) : "")
+                ]
+              })
+            ]
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: halfWidth, type: WidthType.DXA },
+                borders: none,
+                children: [kv("Performa Invoice", piNumber)]
+              }),
+              new TableCell({
+                width: { size: halfWidth, type: WidthType.DXA },
+                borders: none,
+                children: [kv("Shipping Line", shippingLine)]
+              })
+            ]
+          }),
+
+          new TableRow({
+            children: [
+              new TableCell({
+                columnSpan: 2, // ⬅️ this is the key
+                width: { size: CONTENT_WIDTH_TWIPS, type: WidthType.DXA },
+                borders: none,
+                children: [kv("Sailing Date", sailingDateText)]
+              })
+            ]
+          })
+
+
+
+        ]
+      });
+
+      return new Header({
+        children: companyType === "TECHNOLUBE"
+          ? [
+            logosLine,
+            companyBadge,
+            kvRows
+          ]
+          : [
+            logosLine,
+            titleParagraph,
+            companyBadge,
+            kvRows
+          ]
+      });
+
+    }
+
+    async function buildFooter(masterRec) {
+      const {
+        Footer, Paragraph, TextRun, AlignmentType, ImageRun, BorderStyle,
+        PageNumber  // ✅ ADD THIS
+      } = window.docx;
+      const size7 = 14;
+      const companyType = getCompanyType(masterRec);
+
+      if (companyType === "TECHNOLUBE") {
+        // Technolube Footer - bilingual with logos
+        const { TabStopType, TabStopPosition } = window.docx;
+
+        // Arabic text (right side) and English text (left side)
+        const arText = "ص.ب : ١١٦٦٣٦، مجمع الصناعات الوطنية، دبي - الامارات العربية المتحدة، هاتف : ٩٧١٤٨٠١٨٤٤٤+، فاكس : ٩٧١٤٨٨٦٧٠١٤+";
+        const enText = "P.O. Box: 116636, National Industries Park, Dubai, U.A.E., Tel: +971 4 8018444, Fax: +971 4 8867014";
+        const trnText = "Techno Lube Group TRN: 100206850800003";
+
+        let footerLogoBuf = null;
+        try { footerLogoBuf = await fetchArrayBuffer(TECHNOLUBE_FOOTER_LOGO_URL); } catch { }
+
+        return new Footer({
+          children: [
+            // ✅ Separator line FIRST (so everything else goes under it)
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              border: {
+                bottom: { style: BorderStyle.SINGLE, size: 6, color: "CCCCCC" }
+              },
+              spacing: { before: 0, after: 120 },
+              children: []
+            }),
+
+            // ✅ Arabic line (UNDER the separator)
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 60 },
+              children: [
+                new TextRun({ text: arText, size: 14, font: "Arial", rightToLeft: true })
+              ]
+            }),
+
+            // ✅ English line (UNDER the separator)
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 60 },
+              children: [
+                new TextRun({ text: enText, size: 14, font: "Arial" })
+              ]
+            }),
+
+            // ✅ TRN line (UNDER the separator)
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 0, after: 120 },
+              children: [
+                new TextRun({ text: trnText, size: 14, font: "Arial", bold: true })
+              ]
+            }),
+
+            // (keep logos if you want them AFTER the text)
+            ...(footerLogoBuf
+              ? [new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 0 },
+                children: [
+                  new ImageRun({
+                    data: footerLogoBuf,
+                    transformation: { width: 450, height: 45 }
+                  })
+                ]
+              })]
+              : []),
+
+            // Page number at the very bottom
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 80, after: 0 },
+              children: [
+                new TextRun({
+                  children: ["Page ", PageNumber.CURRENT, " of ", PageNumber.TOTAL_PAGES],
+                  font: "Arial",
+                  size: 16
+                })
+              ]
+            })
+          ]
+        });
+
+      } else {
+        // Petrolube Footer (existing)
+        const en =
+          "Petrolube Oil Company, Closed Joint Stock Company (Single Shareholder) / The CR number: 4030608930 / Company's Capital: 300,000,000 SR, Tel: +966126996600 / Address: Aya Mall, Prince Sultan Street / Al-Muhammadiyah District / Jeddah 23618, P.O. Box 41728";
+        const ar =
+          "شركة بترولوب للزيوت، شركة مساهمة مقفلة (شخص واحد) / رقم السجل التجاري: ٤٠٣٠٦٠٨٩٣٠ / رأس مال الشركة: ٣٠٠٬٠٠٠٬٠٠٠ ريال سعودي\nالهاتف: ٩٦٦١٢٦٩٦٦٠٠ / ‎+ العنوان: آية مول، شارع الأمير سلطان / حي المحمدية / جدة ٢٣٦١٨، ص.ب ٤١٧٢٨";
+
+        return new Footer({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({ text: en, size: size7, font: "Arial" })
+              ]
+            }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({ text: ar, size: size7, font: "Arial" })
+              ]
+            }),
+            // ✅ ADD PAGE NUMBER HERE
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 80, after: 0 },
+              children: [
+                new TextRun({
+                  children: [
+                    "Page ",
+                    PageNumber.CURRENT,
+                    " of ",
+                    PageNumber.TOTAL_PAGES
+                  ],
+                  font: "Arial",
+                  size: 16
+                })
+              ]
+            })
+
+
+          ]
+        });
+      }
+    }
+
+    function buildAdditionalDetailsTable(additionalDetails) {
+      if (!additionalDetails) return null;
+
+      const {
+        Table, TableRow, TableCell, Paragraph, TextRun,
+        WidthType, BorderStyle, VerticalAlign, AlignmentType, ShadingType
+      } = window.docx;
+
+      const hiddenStr = additionalDetails.cr650_hidden_details || "";
+      const hiddenSet = new Set(hiddenStr.split(",").filter(x => x.trim()));
+
+      const allDetails = [
+        {
+          key: "totalPallets",
+          label: "Number of pallets the products are packed on",
+          field: "cr650_totalpallets",
+          format: (v) => fmtNum(v, 2)
+        },
+        {
+          key: "totalCartons",
+          label: "Total Number of Cartons",
+          field: "cr650_totalcartons",
+          format: (v) => String(Math.round(v) || 0)
+        },
+        {
+          key: "totalDrums",
+          label: "Total Number of Drums",
+          field: "cr650_totaldrums",
+          format: (v) => String(Math.round(v) || 0)
+        },
+        {
+          key: "totalPails",
+          label: "Total Number of Pails",
+          field: "cr650_totalpails",
+          format: (v) => String(Math.round(v) || 0)
+        },
+        {
+          key: "totalPackages",
+          label: "Total Number of Packages",
+          field: "cr650_totalpackages",
+          format: (v) => String(Math.round(v) || 0)
+        },
+        {
+          key: "totalNetWeight",
+          label: "Total Net Weight of Packages (Kgs)",
+          field: "cr650_totalnetweight",
+          format: (v) => fmtNum(v, 2)
+        },
+        {
+          key: "totalGrossWeight",
+          label: "Total Gross Weight of Packages (Kgs)",
+          field: "cr650_totalgrossweight",
+          format: (v) => fmtNum(v, 2)
+        }
+      ];
+
+      const visibleDetails = allDetails.filter(d => !hiddenSet.has(d.key));
+      if (!visibleDetails.length) return null;
+
+      const GRID = { style: BorderStyle.SINGLE, size: 8, color: "000000" };
+      const rows = [];
+
+      rows.push(new TableRow({
+        children: [
+          new TableCell({
+            width: { size: Math.floor(CONTENT_WIDTH_TWIPS * 0.7), type: WidthType.DXA },
+            shading: { type: ShadingType.CLEAR, color: "auto", fill: HEADER_BG },
+            borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: "Additional Details", bold: true, font: "Arial", size: 20 })]
+              })
+            ]
+          }),
+          new TableCell({
+            width: { size: Math.floor(CONTENT_WIDTH_TWIPS * 0.3), type: WidthType.DXA },
+            shading: { type: ShadingType.CLEAR, color: "auto", fill: HEADER_BG },
+            borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [new TextRun({ text: "Value", bold: true, font: "Arial", size: 20 })]
+              })
+            ]
+          })
+        ]
+      }));
+
+      visibleDetails.forEach(detail => {
+        const rawValue = additionalDetails[detail.field];
+        const displayValue = detail.format ? detail.format(rawValue) : String(rawValue ?? "0");
+
+        rows.push(new TableRow({
+          children: [
+            new TableCell({
+              width: { size: Math.floor(CONTENT_WIDTH_TWIPS * 0.7), type: WidthType.DXA },
+              borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+              verticalAlign: VerticalAlign.CENTER,
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: detail.label, font: "Arial", size: 18 })]
+                })
+              ]
+            }),
+            new TableCell({
+              width: { size: Math.floor(CONTENT_WIDTH_TWIPS * 0.3), type: WidthType.DXA },
+              borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+              verticalAlign: VerticalAlign.CENTER,
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.RIGHT,
+                  children: [new TextRun({ text: displayValue, font: "Arial", size: 18 })]
+                })
+              ]
+            })
+          ]
+        }));
+      });
+
+      const comments = additionalDetails.cr650_additionalcomments;
+      if (comments && comments.trim()) {
+        rows.push(new TableRow({
+          children: [
+            new TableCell({
+              width: { size: Math.floor(CONTENT_WIDTH_TWIPS * 0.7), type: WidthType.DXA },
+              borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+              verticalAlign: VerticalAlign.TOP,
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: "Additional Comments", font: "Arial", size: 18 })]
+                })
+              ]
+            }),
+            new TableCell({
+              width: { size: Math.floor(CONTENT_WIDTH_TWIPS * 0.3), type: WidthType.DXA },
+              borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+              verticalAlign: VerticalAlign.TOP,
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: comments.trim(), font: "Arial", size: 18 })]
+                })
+              ]
+            })
+          ]
+        }));
+      }
+
+      return new Table({
+        width: { size: CONTENT_WIDTH_TWIPS, type: WidthType.DXA },
+        columnWidths: [
+          Math.floor(CONTENT_WIDTH_TWIPS * 0.7),
+          Math.floor(CONTENT_WIDTH_TWIPS * 0.3)
+        ],
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+          bottom: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+          left: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+          right: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+          insideHorizontal: GRID,
+          insideVertical: GRID
+        },
+        rows
+      });
+    }
+
+    async function createDocxBlob(masterRec, containers, itemsByContainer, plansByContainer, additionalDetails) {
+      await loadDocxOnce();
+      const {
+        Document, Paragraph, TextRun, Table, TableRow, TableCell,
+        WidthType, BorderStyle, VerticalAlign, AlignmentType, ShadingType
+      } = window.docx;
+
+      const docHeader = await buildDocHeader(masterRec, containers);
+      const docFooter = await buildFooter(masterRec);
+
+      const GRID = { style: BorderStyle.SINGLE, size: 8, color: "000000" };
+      const OUTER = { style: BorderStyle.SINGLE, size: 12, color: "000000" };
+      const COLW = {
+        sr: 700,        // Serial # (reduced)
+        order: 1600,    // Order # (reduced)
+        prodId: 1800,   // Product ID (reduced)
+        desc: 4000,     // Description (reduced to make room)
+        pack: 1400,     // Packaging (reduced)
+        uom: 900,       // UOM (reduced)
+        qty: 1200,      // Quantity (reduced)
+        tltr: 1400,     // Total LTRs (reduced)
+        net: 1400,      // Net Weight (reduced)
+        gross: 1400,    // Gross Weight (reduced)
+        palletCount: 1200,  // ✅ NEW: Pallet Count
+        palletWeight: 1400, // ✅ NEW: Pallet Weight
+        grossWithPallets: 1600  // ✅ NEW: Gross Weight with Pallets
+      };
+
+      const th = (text, w) => new TableCell({
+        width: { size: w, type: WidthType.DXA },
+        verticalAlign: VerticalAlign.CENTER,
+        shading: { type: ShadingType.CLEAR, color: "auto", fill: HEADER_BG },
+        borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text, bold: true, font: "Arial", size: 18 })]
+          })
+        ]
+      });
+
+      const td = (text, w, { numeric = false, center = false } = {}) => new TableCell({
+        width: { size: w, type: WidthType.DXA },
+        verticalAlign: VerticalAlign.CENTER,
+        borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+        children: [
+          new Paragraph({
+            alignment: numeric ? AlignmentType.RIGHT : (center ? AlignmentType.CENTER : AlignmentType.LEFT),
+            children: [new TextRun({ text: String(text ?? ""), font: "Arial", size: 18 })]
+          })
+        ]
+      });
+
+      function containerDocxTable(containerIdx, titleText, items, planMap, containerTypeRaw) {
+        const rows = [];
+
+        rows.push(new TableRow({
+          tableHeader: true,
+          children: [
+            th("Sr. #", COLW.sr),
+            th("Order #", COLW.order),
+            th("Product ID", COLW.prodId),
+            th("Product Description", COLW.desc),
+            th("Packaging", COLW.pack),
+            th("UOM", COLW.uom),
+            th("Quantity", COLW.qty),
+            th("Total LTRs", COLW.tltr),
+            th("Net Weight", COLW.net),
+            th("Gross Weight", COLW.gross),
+            th("Pallet Count", COLW.palletCount),           // ✅ NEW
+            th("Pallet Weight", COLW.palletWeight),         // ✅ NEW
+            th("Gross Wt + Pallets", COLW.grossWithPallets) // ✅ NEW
+          ]
+        }));
+
+        rows.push(new TableRow({
+          children: [
+            new TableCell({
+              columnSpan: 13,  // ✅ CHANGED: was 10, now 13 (added 3 columns)
+              shading: { type: ShadingType.CLEAR, color: "auto", fill: BAND_BG },
+              borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [
+                    new TextRun({
+                      text: `${ord(containerIdx)} Container`,
+                      bold: true,
+                      font: "Arial",
+                      size: 18
+                    })
+                  ]
+                })
+              ]
+            })
+          ]
+        }));
+
+        let sumLiters = 0, sumNet = 0, sumGross = 0, sumPalletCount = 0, sumPalletWeight = 0, sumGrossWithPallets = 0;
+
+        (items || []).forEach((it, idx) => {
+          const p = planMap[it[I_FIELDS.planLkp]] || {};
+
+          // ✅ STEP 1: Get Quantity from Container Items table
+          const qty = +it[I_FIELDS.qty] || 0;
+
+          // ✅ STEP 2: Get UOM from Loading Plan table
+          const uom = +p[L_FIELDS.uom] || 0;
+
+          // ✅ STEP 3: Calculate Total LTRs = UOM * qty
+          const totalLiters = uom * qty;
+
+          // ✅ STEP 4: Get description to check for COOLANT
+          const description = String(p[L_FIELDS.description] || "");
+
+          // ✅ STEP 5: Calculate Net Weight based on COOLANT check
+          const isCoolant = /COOLANT/i.test(description);
+          const netWeight = isCoolant
+            ? (totalLiters * 1.07)
+            : (totalLiters * 0.9);
+
+          // ✅ STEP 6: Calculate Gross Weight = qty + Net Weight
+          const grossWeight = qty + netWeight;
+
+          // ✅ STEP 7: Get Pallet Count from Loading Plan table
+          const palletCount = +p[L_FIELDS.palletCount] || 0;
+
+          // ✅ STEP 8: Get Pallet Weight from Loading Plan table
+          const palletWeight = +p[L_FIELDS.palletWeight] || 0;
+
+          // ✅ STEP 9: Calculate Gross Wt + Pallets = Gross Weight + Pallet Weight
+          const grossWithPallets = grossWeight + palletWeight;
+
+          // Update running totals
+          sumLiters += totalLiters;
+          sumNet += netWeight;
+          sumGross += grossWeight;
+          sumPalletCount += palletCount;
+          sumPalletWeight += palletWeight;
+          sumGrossWithPallets += grossWithPallets;
+
+          rows.push(new TableRow({
+            children: [
+              td(String(idx + 1), COLW.sr, { center: true }),
+              td(p[L_FIELDS.orderNo] || "", COLW.order, { center: true }),
+              td(p[L_FIELDS.productId] || "", COLW.prodId, { center: true }),
+              td(description, COLW.desc, { center: false }),
+              td(p[L_FIELDS.packaging] || "", COLW.pack, { center: true }),
+              td(fmtNum(uom, 2), COLW.uom, { center: true }),
+              td(fmtNum(qty, 0), COLW.qty, { center: true }),
+              td(fmtNum(totalLiters, 2), COLW.tltr, { center: true }),
+              td(fmtNum(netWeight, 2), COLW.net, { center: true }),
+              td(fmtNum(grossWeight, 2), COLW.gross, { center: true }),
+              td(fmtNum(palletCount, 2), COLW.palletCount, { center: true }),
+              td(fmtNum(palletWeight, 2), COLW.palletWeight, { center: true }),
+              td(fmtNum(grossWithPallets, 2), COLW.grossWithPallets, { center: true })
+            ]
+          }));
+        });
+
+        function mapContainerType(raw) {
+          if (raw === null || raw === undefined || raw === "") return "";
+          const s = String(raw).trim().toLowerCase();
+          const num = Number(s);
+          if (!isNaN(num)) {
+            if (num === 1) return "20ft";
+            if (num === 2) return "40ft";
+            if (num === 3) return "Trucks";
+            if (num === 4) return "Bulk Tanker";
+          }
+          if (s.includes("20")) return "20ft";
+          if (s.includes("40")) return "40ft";
+          if (s.includes("truck")) return "Trucks";
+          if (s.includes("bulk")) return "Bulk Tanker";
+          return s;
+        }
+
+        const containerTypeName = mapContainerType(containerTypeRaw);
+        const formattedLabel = `1x${containerTypeName || "Container"}`;
+
+        rows.push(new TableRow({
+          children: [
+            new TableCell({
+              columnSpan: 7,  // Still spans first 7 columns (Sr# through Quantity)
+              borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+              children: [
+                new Paragraph({
+                  alignment: AlignmentType.CENTER,
+                  children: [
+                    new TextRun({
+                      text: `Total (${formattedLabel})`,
+                      bold: true,
+                      font: "Arial",
+                      size: 18
+                    })
+                  ]
+                })
+              ]
+            }),
+            td(fmtNum(sumLiters, 2), COLW.tltr, { center: true }),
+            td(fmtNum(sumNet, 2), COLW.net, { center: true }),
+            td(fmtNum(sumGross, 2), COLW.gross, { center: true }),
+            td(fmtNum(sumPalletCount, 2), COLW.palletCount, { center: true }),           // ✅ NEW
+            td(fmtNum(sumPalletWeight, 2), COLW.palletWeight, { center: true }),         // ✅ NEW
+            td(fmtNum(sumGrossWithPallets, 2), COLW.grossWithPallets, { center: true })  // ✅ NEW
+          ]
+        }));
+
+        return new window.docx.Table({
+          width: { size: CONTENT_WIDTH_TWIPS, type: WidthType.DXA },
+          columnWidths: [
+            COLW.sr, COLW.order, COLW.prodId, COLW.desc,
+            COLW.pack, COLW.uom, COLW.qty, COLW.tltr, COLW.net, COLW.gross,
+            COLW.palletCount, COLW.palletWeight, COLW.grossWithPallets  // ✅ NEW
+          ],
+          borders: {
+            top: OUTER, bottom: OUTER, left: OUTER, right: OUTER,
+            insideHorizontal: GRID, insideVertical: GRID
+          },
+          rows
+        });
+      }
+
+      const spacer = (h = 120) => new Paragraph({ spacing: { before: h, after: h }, children: [] });
+      const children = [];
+      // ==========================================
+      // ✅ LOADING PLAN ADDITIONAL COMMENTS
+      // ==========================================
+      const lpComments = masterRec[FIELDS.lpComments];
+      if (lpComments && lpComments.trim()) {
+        // Section title
+        children.push(new Paragraph({
+          spacing: { before: 240, after: 120 },
+          children: [
+            new TextRun({
+              text: "Additional Comments:",
+              bold: true,
+              color: "c41e3a",
+              font: "Arial",
+              size: 24
+            })
+          ]
+        }));
+
+        // Plain text comments (no border, no background)
+        children.push(new Paragraph({
+          spacing: { before: 60, after: 240 },
+          children: [
+            new TextRun({
+              text: lpComments.trim(),
+              font: "Arial",
+              size: 20,
+              color: TEXT_PRIMARY
+            })
+          ]
+        }));
+
+        children.push(spacer(180));
+      }
+      if (!containers?.length) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: "No containers linked to this DCL.", font: "Arial", size: 18 })]
+        }));
+      } else {
+        // Removed "Containers" heading
+
+        containers.forEach((c, i) => {
+          const cid = c[C_FIELDS.id];
+          const items = itemsByContainer[cid] || [];
+          const planMap = plansByContainer[cid] || {};
+          const title = `${ord(i + 1)} Container — ${nil(c[C_FIELDS.code], "")}`;
+          children.push(containerDocxTable(i + 1, title, items, planMap, c[C_FIELDS.type]));
+          children.push(spacer(80));
+        });
+      }
+
+
+
+      const doc = new window.docx.Document({
+        styles: {
+          default: {
+            document: {
+              run: { font: "Arial", size: 18, color: TEXT_PRIMARY }
+            }
+          }
+        },
+        sections: [{
+          headers: { default: docHeader },
+          footers: { default: docFooter },
+          properties: {
+            page: {
+              margin: {
+                top: 1440,
+                right: RIGHT_MARGIN_TWIPS,
+                bottom: 1440,
+                left: LEFT_MARGIN_TWIPS
+              }
+            }
+          },
+          children
+        }]
+      });
+
+      return await window.docx.Packer.toBlob(doc);
+    }
+
+    async function blobToBase64Raw(blob) {
+      const buf = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        const chunk = bytes.subarray(i, i + chunkSize);
+        binary += String.fromCharCode.apply(null, chunk);
+      }
+      return btoa(binary);
+    }
+
+    async function sendBlobToFlow(dclId, blob, docType) {
+      const fileContent = await blobToBase64Raw(blob);
+      const language = getSelectedLpLanguage();
+      const payload = JSON.stringify({
+        id: String(dclId),
+        fileContent,
+        docType: String(docType),
+        fileExtension: "docx",
+        language
+      });
+
+      const res = await fetch(FLOW_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: payload
+      });
+
+      const raw = await res.text();
+      let body = null;
+      try { body = raw ? JSON.parse(raw) : null; } catch { body = raw; }
+
+      if (!res.ok) {
+        const msg = (body && (body.error || body.message)) ? (body.error || body.message) : res.statusText;
+        throw new Error("Flow upload failed: " + msg);
+      }
+      return body || {};
+    }
+
+    async function generateAndDownload() {
+      const dclId = resolveDclId();
+      if (!dclId) throw new Error("Cannot find DCL id. Supply ?id=<guid> or add a [data-dclid] element.");
+      ensureSafeAjax();
+      showTopLoader();
+      blurPage(); // Add blur when starting
+
+      try {
+        const [master, containers, additionalDetails] = await Promise.all([
+          fetchDclById(dclId),
+          fetchContainersByDclId(dclId),
+          fetchAdditionalDetails(dclId)
+        ]);
+        const { itemsByContainer, plansByContainer } = await fetchItemsAndPlansForContainers(containers);
+        const blob = await createDocxBlob(master, containers, itemsByContainer, plansByContainer, additionalDetails);
+
+        // ✅ Use DCL Number instead of GUID for filename
+        const dclNumber = master[FIELDS.dclNumber] || dclId;
+        const fn = `Loading_Plan_${dclNumber}.docx`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fn;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+        try {
+          const resp = await sendBlobToFlow(dclId, blob, "Loading Plan");
+          const fileUrl = resp.fileUrl || resp.documentUrl || resp.url || null;
+          const ok = resp.success !== false;
+          if (ok && fileUrl) {
+            applyViewState(fileUrl);
+            window.__lpExisting = true;
+
+            window.dispatchEvent(new CustomEvent("dcl:doc:updated", {
+              detail: {
+                type: "Loading Plan",
+                language: getSelectedLpLanguage(),
+                fileUrl
+              }
+            }));
+          }
+        } catch (e) {
+          console.warn("[Flow] Upload failed:", e?.message || e);
+          alert("The file was generated, but uploading to the server failed.\n" + (e?.message || String(e)));
+        }
+      } finally {
+        hideTopLoader();
+        unblurPage(); // Remove blur when done (success or error)
+      }
+    }
+
+    function showLPWarning() {
+      const warning = document.getElementById('lpWarning');
+      if (warning) {
+        warning.classList.remove('hidden');
+      }
+    }
+
+    function hideLPWarning() {
+      const warning = document.getElementById('lpWarning');
+      if (warning) {
+        warning.classList.add('hidden');
+      }
+    }
+
+    function applyViewState(docUrl) {
+      const genBtn = document.querySelector('#generateLP');
+      if (genBtn) {
+        genBtn.style.display = '';
+        genBtn.removeAttribute('aria-hidden');
+        genBtn.dataset.lpLocked = '0';
+        genBtn.innerHTML = '<i class="fas fa-sync-alt" aria-hidden="true"></i> Regenerate LP';
+        genBtn.classList.remove('btn-outline');
+        genBtn.classList.add('btn-primary');
+      }
+
+      // Show warning when in regenerate mode
+      showLPWarning();
+
+      let previewBtn = document.querySelector('[data-preview="lp"]');
+      if (previewBtn) {
+        previewBtn.innerHTML = '<i class="fas fa-external-link-alt" aria-hidden="true"></i> View LP';
+        previewBtn.classList.remove('btn-outline');
+        previewBtn.classList.add('btn-primary');
+        previewBtn.title = "Open generated Loading Plan";
+
+        const clone = previewBtn.cloneNode(true);
+        previewBtn.parentNode.replaceChild(clone, previewBtn);
+        clone.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.open(docUrl, '_blank', 'noopener');
+        });
+      } else {
+        const actions = document.querySelector('.document-actions');
+        if (actions) {
+          const a = document.createElement('a');
+          a.className = 'btn btn-primary';
+          a.innerHTML = '<i class="fas fa-external-link-alt" aria-hidden="true"></i> View LP';
+          a.href = docUrl;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          actions.appendChild(a);
+        }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const dclId = resolveDclId();
+        if (!dclId) return;
+        const existing = await findExistingLPDoc(dclId);
+        if (existing?.url) {
+          window.__lpExisting = true;
+          applyViewState(existing.url);
+        } else {
+          window.__lpExisting = false;
+          hideLPWarning(); // Hide warning if no existing document
+        }
+      } catch (err) {
+        console.warn("[LP toggle] Skipped due to error:", err?.message || err);
+        window.__lpExisting = false;
+        hideLPWarning();
+      }
+    });
+
+    document.addEventListener("click", async (e) => {
+      if (!e.target.closest(BTN_SEL)) return;
+
+      // ✅ CHECK FOR UNRELEASED ORDERS FIRST
+      const dclId = resolveDclId();
+      if (dclId) {
+        try {
+          const shouldProceed = await checkUnreleasedOrders(dclId);
+          if (!shouldProceed) {
+            console.log("🛑 User cancelled due to unreleased orders");
+            return; // Stop here - don't generate
+          }
+        } catch (err) {
+          console.error("Error checking unreleased orders:", err);
+          // Continue anyway if check fails
+        }
+      }
+
+      // ✅ PROCEED WITH GENERATION
+      generateAndDownload().catch(err => {
+        console.error("Generation error:", err);
+        alert("Could not generate DOCX.\n" + (err?.message || String(err)));
+      });
+    });
+  })();
+</script>
+
+
+<script>
+  (function (w, d) {
+    "use strict";
+
+    // 1) Read ?id=... from the current URL
+    function getQueryId() {
+      var m = /[?&]id=([^&#]+)/i.exec(w.location.href);
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+
+    // 2) Safely add/replace id in any href (relative or absolute)
+    function buildHrefWithId(href, id) {
+      if (!id || !href) return href;
+      try {
+        var u = new URL(href, w.location.origin);
+        u.searchParams.set("id", id);
+        var sp = u.searchParams.toString();
+        return u.pathname + (sp ? "?" + sp : "") + (u.hash || "");
+      } catch (e) {
+        // Fallback: basic append if URL constructor fails
+        var sep = href.indexOf("?") === -1 ? "?" : "&";
+        return href + sep + "id=" + encodeURIComponent(id);
+      }
+    }
+
+    d.addEventListener("DOMContentLoaded", function () {
+      var id = getQueryId();
+      if (!id) return; // nothing to propagate
+
+      // 3) Apply to BOTH step indicators and navigation buttons
+      var links = d.querySelectorAll("#stepIndicators a, .navigation-buttons a");
+      links.forEach(function (a) {
+        var raw = a.getAttribute("href");
+        if (!raw) return;
+        a.setAttribute("href", buildHrefWithId(raw, id));
+      });
+    });
+  })(window, document);
+</script>
