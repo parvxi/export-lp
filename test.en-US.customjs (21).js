@@ -66,6 +66,7 @@
   const DCL_CONTAINERS_API = "/_api/cr650_dcl_containers";
 
   // NEW: DCL Container Items API
+  // Note: Palletized and # Pallets are stored in the Loading Plan table, not Container Items
   const DCL_CONTAINER_ITEMS_API = "/_api/cr650_dcl_container_itemses";
   const DCL_CONTAINER_ITEMS_FIELDS = [
     "cr650_dcl_container_itemsid",
@@ -74,8 +75,6 @@
     "_cr650_dcl_number_value",
     "_cr650_dcl_master_number_value",
     "cr650_issplititem",
-    "cr650_ispalletized",
-    "cr650_palletcount",
     "createdon"
   ];
 
@@ -998,8 +997,9 @@
       containerGuid: row._cr650_dcl_number_value || null,
       dclMasterGuid: row._cr650_dcl_master_number_value || null,
       isSplitItem: row.cr650_issplititem === true,
-      palletized: row.cr650_ispalletized === true ? "Yes" : "No",
-      numberOfPallets: asNum(row.cr650_palletcount) || 0
+      // Palletized and numberOfPallets are retrieved from Loading Plan row in rebuildAssignmentTable
+      palletized: "No",
+      numberOfPallets: 0
     };
   }
 
@@ -3704,7 +3704,8 @@
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#6c757d;margin-top:8px;padding-top:8px;border-top:1px solid #e9ecef;">
             <span>Total Items: <strong>${itemCount}</strong></span>
             <button type="button"
-              onclick="removeContainerCard('${escapeHtml(c.id)}')"
+              class="delete-container-btn"
+              data-container-id="${escapeHtml(c.id)}"
               style="background:#dc3545;color:white;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;"
               title="Remove container">
               Delete
@@ -3724,6 +3725,16 @@
         </div>
       `;
     }).join("");
+
+    // Attach delete button event listeners (CSP-compliant - no inline handlers)
+    grid.querySelectorAll(".delete-container-btn").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const containerId = this.dataset.containerId;
+        if (containerId) {
+          removeContainerCard(containerId);
+        }
+      });
+    });
 
   }
 
@@ -4835,12 +4846,6 @@
           vol = totalVol * ratio;
         }
 
-        // Add pallet weight if palletized
-        const isPalletized = ci.palletized === "Yes";
-        const numberOfPallets = ci.numberOfPallets || 0;
-        const palletWeight = isPalletized ? (numberOfPallets * 19.38) : 0;
-        gross += palletWeight;
-
         // Check FG Master dimensions
         let fg = null;
         let hasDimensions = false;
@@ -4888,6 +4893,11 @@
         // Get palletized and # pallets from container item state
         const palletized = ci.palletized || "No";
         const numberOfPallets = ci.numberOfPallets || 0;
+        const isPalletized = palletized === "Yes";
+
+        const palletWeight = isPalletized ? (numberOfPallets * 19.38) : 0;
+        gross += palletWeight;
+
 
         // ✅ SET INNER HTML
         tr.innerHTML = `
@@ -5068,76 +5078,28 @@
         }
       }
 
-      // Handle palletized select change
+      // Handle palletized select change (UI-only for now - fields need to be added to Dataverse)
       if (e.target.classList.contains("palletized-select")) {
-        const palletizedValue = e.target.value === "Yes";
+        // Update local state only
+        ci.palletized = e.target.value;
 
-        try {
-          // Update Dataverse
-          await patchContainerItem(ciId, {
-            cr650_ispalletized: palletizedValue
-          });
-
-          // Update local state
-          ci.palletized = e.target.value;
-
-          // Recalculate gross weight with pallet weight
-          const palletsInput = tr.querySelector(".pallets-input");
-          const numberOfPallets = asNum(palletsInput?.value) || 0;
-          const palletWeight = palletizedValue ? (numberOfPallets * 19.38) : 0;
-
-          // Update the LP row's gross weight if needed
-          const lpIndex = buildLpRowIndex();
-          const lpRow = lpIndex.get((lpId || "").toLowerCase());
-          if (lpRow) {
-            recalcRow(lpRow);
-            await updateServerRowFromTr(lpRow, CURRENT_DCL_ID);
-          }
-
-          rebuildAssignmentTable();
-          renderContainerSummaries();
-          recomputeTotals();
-
-        } catch (err) {
-          console.error("Failed to update palletized status", err);
-          showValidation("error", "Failed to update palletized status.");
-        }
+        // Recalculate and refresh UI
+        rebuildAssignmentTable();
+        renderContainerSummaries();
+        recomputeTotals();
       }
 
-      // Handle pallets input change
+      // Handle pallets input change (UI-only for now - fields need to be added to Dataverse)
       if (e.target.classList.contains("pallets-input")) {
         const numberOfPallets = asNum(e.target.value) || 0;
 
-        try {
-          // Update Dataverse
-          await patchContainerItem(ciId, {
-            cr650_palletcount: numberOfPallets
-          });
+        // Update local state only
+        ci.numberOfPallets = numberOfPallets;
 
-          // Update local state
-          ci.numberOfPallets = numberOfPallets;
-
-          // Recalculate gross weight with pallet weight
-          const palletizedSelect = tr.querySelector(".palletized-select");
-          const isPalletized = palletizedSelect?.value === "Yes";
-          const palletWeight = isPalletized ? (numberOfPallets * 19.38) : 0;
-
-          // Update the LP row's gross weight if needed
-          const lpIndex = buildLpRowIndex();
-          const lpRow = lpIndex.get((lpId || "").toLowerCase());
-          if (lpRow) {
-            recalcRow(lpRow);
-            await updateServerRowFromTr(lpRow, CURRENT_DCL_ID);
-          }
-
-          rebuildAssignmentTable();
-          renderContainerSummaries();
-          recomputeTotals();
-
-        } catch (err) {
-          console.error("Failed to update pallet count", err);
-          showValidation("error", "Failed to update pallet count.");
-        }
+        // Recalculate and refresh UI
+        rebuildAssignmentTable();
+        renderContainerSummaries();
+        recomputeTotals();
       }
 
     });
