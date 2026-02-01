@@ -74,6 +74,8 @@
     "_cr650_dcl_number_value",
     "_cr650_dcl_master_number_value",
     "cr650_issplititem",
+    "cr650_ispalletized",
+    "cr650_palletcount",
     "createdon"
   ];
 
@@ -995,7 +997,9 @@
       quantity: asNum(row.cr650_quantity),
       containerGuid: row._cr650_dcl_number_value || null,
       dclMasterGuid: row._cr650_dcl_master_number_value || null,
-      isSplitItem: row.cr650_issplititem === true  // ✅ ADD THIS LINE
+      isSplitItem: row.cr650_issplititem === true,
+      palletized: row.cr650_ispalletized === true ? "Yes" : "No",
+      numberOfPallets: asNum(row.cr650_palletcount) || 0
     };
   }
 
@@ -1283,21 +1287,12 @@
     <td class="order-qty ce-num">${fmt2(item.OrderQuantity)}</td>
 
     <td class="loading-qty-cell">
-      <input type="number" class="loading-qty" min="0" value="${fmt2(item.LoadingQuantity)}" 
+      <input type="number" class="loading-qty" min="0" value="${fmt2(item.LoadingQuantity)}"
              style="width:100px" disabled>
     </td>
 
     <td class="pending-qty ce-num">${fmt2(item.PendingQuantity)}</td>
 
-    <td class="palletized-cell">
-      <select class="palletized-select" disabled>
-        <option value="No"  ${item.palletized === "No" ? "selected" : ""}>No</option>
-        <option value="Yes" ${item.palletized === "Yes" ? "selected" : ""}>Yes</option>
-      </select>
-    </td>
-
-    <td class="pallets ce-num">${fmt2(item.numberOfPallets)}</td>
-    <td class="pallets-weight ce-num">${fmt2(item.palletsWeight)}</td>
     <td class="total-liters ce-num">${fmt2(item.totalLiters)}</td>
     <td class="net-weight ce-num">${fmt2(item.netWeight)}</td>
     <td class="gross-weight ce-num">${fmt2(item.grossWeight)}</td>
@@ -1334,9 +1329,6 @@
     const orderQtyCell = tr.querySelector(".order-qty");
     const loadingQtyInput = tr.querySelector(".loading-qty");
     const pendingQtyCell = tr.querySelector(".pending-qty");
-    const palletizedSelect = tr.querySelector(".palletized-select");
-    const palletsCell = tr.querySelector(".pallets");
-    const palletsWeightCell = tr.querySelector(".pallets-weight");
     const totalLitersCell = tr.querySelector(".total-liters");
     const netWeightCell = tr.querySelector(".net-weight");
     const grossWeightCell = tr.querySelector(".gross-weight");
@@ -1346,16 +1338,14 @@
     const description = (descriptionCell?.textContent || "").trim().toUpperCase();
     const orderQty = asNum(orderQtyCell?.textContent);
     const loadingQty = asNum(loadingQtyInput?.value);
-    const palletized = (palletizedSelect?.value || "No").trim().toLowerCase() === "yes";
-    const numberOfPallets = asNum(palletsCell?.textContent);
 
     // Calculate UOM from packaging (e.g., "30x4" = 120)
     const uom = parsePackLiters(packaging);
     if (uomCell) uomCell.textContent = fmt2(uom);
 
-    // Pending Quantity = Order Quantity − Loading Quantity
-    const pendingQty = orderQty - loadingQty;
-    if (pendingQtyCell) pendingQtyCell.textContent = fmt2(pendingQty);
+    // Note: Pending Quantity is calculated at the group level in recomputeTotals()
+    // to correctly handle split items (same order+item across multiple rows)
+    // Individual row calculation removed to avoid double-counting issues
 
     // Total Liters = Loading Quantity × UOM
     // Skip if user has manually overridden the value
@@ -1375,14 +1365,10 @@
     }
     const netWeight = asNum(netWeightCell?.textContent);
 
-    // Pallet Weight = 0 if not palletized, else Number of Pallets × 19.38
-    const palletWeight = palletized ? (numberOfPallets * 19.38) : 0;
-    if (palletsWeightCell) palletsWeightCell.textContent = fmt2(palletWeight);
-
-    // Gross Weight = Pallet Weight + Net Weight + Loading Quantity
+    // Gross Weight = Net Weight + Loading Quantity (carton weight)
     // Skip if user has manually overridden the value
     if (grossWeightCell && !grossWeightCell.dataset.manualOverride) {
-      const grossWeight = palletWeight + netWeight + loadingQty;
+      const grossWeight = netWeight + loadingQty;
       grossWeightCell.textContent = fmt2(grossWeight);
     }
   }
@@ -1462,17 +1448,75 @@
     const rows = QA("#itemsTableBody tr.lp-data-row");
 
     let totalItems = rows.length;
-    let totalOrderQty = 0;
     let totalLoadingQty = 0;
     let totalNet = 0;
     let totalGross = 0;
 
+    // Group rows by order number + item code to avoid double-counting Order Qty for split items
+    const orderItemGroups = new Map();
+
     rows.forEach((r) => {
-      totalOrderQty += asNum(r.querySelector(".order-qty")?.textContent);
-      totalLoadingQty += asNum(r.querySelector(".loading-qty")?.value);
-      totalNet += asNum(r.querySelector(".net-weight")?.textContent);
-      totalGross += asNum(r.querySelector(".gross-weight")?.textContent);
+      const orderNo = (r.querySelector(".order-no")?.textContent || "").trim();
+      const itemCode = (r.querySelector(".item-code")?.textContent || "").trim();
+      const orderQty = asNum(r.querySelector(".order-qty")?.textContent);
+      const loadingQty = asNum(r.querySelector(".loading-qty")?.value);
+      const netWeight = asNum(r.querySelector(".net-weight")?.textContent);
+      const grossWeight = asNum(r.querySelector(".gross-weight")?.textContent);
+
+      // Create a unique key for order + item combination
+      const key = `${orderNo}|${itemCode}`;
+
+      if (!orderItemGroups.has(key)) {
+        orderItemGroups.set(key, {
+          orderQty: orderQty, // Only count order qty once per unique order+item
+          totalLoadingQty: 0,
+          totalNet: 0,
+          totalGross: 0
+        });
+      }
+
+      const group = orderItemGroups.get(key);
+      group.totalLoadingQty += loadingQty;
+      group.totalNet += netWeight;
+      group.totalGross += grossWeight;
+
+      // Also update the pending qty for this row based on the group
+      const pendingQtyCell = r.querySelector(".pending-qty");
+      if (pendingQtyCell) {
+        // For individual row, show: Order Qty - Total Loading Qty for this group
+        // This will be recalculated after all rows are processed
+      }
+
+      totalLoadingQty += loadingQty;
+      totalNet += netWeight;
+      totalGross += grossWeight;
     });
+
+    // Calculate total order qty (unique, not double-counting splits)
+    let totalOrderQty = 0;
+    orderItemGroups.forEach(group => {
+      totalOrderQty += group.orderQty;
+    });
+
+    // Now update pending qty for each row based on its group
+    rows.forEach((r) => {
+      const orderNo = (r.querySelector(".order-no")?.textContent || "").trim();
+      const itemCode = (r.querySelector(".item-code")?.textContent || "").trim();
+      const key = `${orderNo}|${itemCode}`;
+      const group = orderItemGroups.get(key);
+
+      if (group) {
+        const pendingQtyCell = r.querySelector(".pending-qty");
+        if (pendingQtyCell) {
+          // Pending = Order Qty - Total Loading Qty for this order+item group
+          const pendingQty = group.orderQty - group.totalLoadingQty;
+          pendingQtyCell.textContent = fmt2(Math.max(0, pendingQty));
+        }
+      }
+    });
+
+    // Calculate total pending qty
+    const totalPendingQty = Math.max(0, totalOrderQty - totalLoadingQty);
 
     setText("#totalItems", totalItems);
     setText("#totalOrderQty", fmt2(totalOrderQty));
@@ -1513,8 +1557,6 @@
     ".pack",
     ".order-qty",
     ".pending-qty",
-    ".pallets",
-    ".pallets-weight",
     ".total-liters",
     ".net-weight",
     ".gross-weight"
@@ -4736,7 +4778,7 @@
     if (!DCL_CONTAINER_ITEMS_STATE.length) {
       const tr = d.createElement("tr");
       tr.innerHTML = `
-      <td colspan="8" style="text-align:center;color:#666;font-size:12px;">
+      <td colspan="10" style="text-align:center;color:#666;font-size:12px;">
         No items in loading plan yet.
       </td>`;
       tbody.appendChild(tr);
@@ -4793,6 +4835,12 @@
           vol = totalVol * ratio;
         }
 
+        // Add pallet weight if palletized
+        const isPalletized = ci.palletized === "Yes";
+        const numberOfPallets = ci.numberOfPallets || 0;
+        const palletWeight = isPalletized ? (numberOfPallets * 19.38) : 0;
+        gross += palletWeight;
+
         // Check FG Master dimensions
         let fg = null;
         let hasDimensions = false;
@@ -4837,6 +4885,10 @@
           }
         }
 
+        // Get palletized and # pallets from container item state
+        const palletized = ci.palletized || "No";
+        const numberOfPallets = ci.numberOfPallets || 0;
+
         // ✅ SET INNER HTML
         tr.innerHTML = `
         <td>${rowPrefix}${escapeHtml(orderNo)}</td>
@@ -4847,6 +4899,15 @@
         <td class="ce-num">
           <input type="number" class="ci-quantity form-control" min="0"
                 value="${fmt2(qty)}" style="width:100px" />
+        </td>
+        <td class="palletized-cell">
+          <select class="palletized-select form-control" style="width:70px">
+            <option value="No" ${palletized === "No" ? "selected" : ""}>No</option>
+            <option value="Yes" ${palletized === "Yes" ? "selected" : ""}>Yes</option>
+          </select>
+        </td>
+        <td class="pallets-cell">
+          <input type="number" class="pallets-input form-control" min="0" value="${fmt2(numberOfPallets)}" style="width:70px" />
         </td>
         <td class="ce-num">${fmt2(gross)}</td>
         <td class="ce-num">${fmt2(vol)}</td>
@@ -4869,7 +4930,7 @@
           <button type="button" class="btn btn-link btn-sm jump-to-lp">View</button>
           <button type="button" class="btn btn-link btn-sm split-item">Split</button>
           ${!hasDimensions ? `
-            <button type="button" class="btn btn-sm add-dims-btn" 
+            <button type="button" class="btn btn-sm add-dims-btn"
                     style="background:#1a7f37;color:white;border:none;padding:4px 8px;border-radius:6px;font-size:0.8rem;margin-left:4px;font-weight:500;"
                     data-lp-id="${escapeHtml(ci.lpId || "")}"
                     data-description="${escapeHtml(desc)}"
@@ -4910,7 +4971,7 @@
           formTr.style.display = "none";
           formTr.dataset.lpId = ci.lpId || "";
           formTr.innerHTML = `
-          <td colspan="8" style="background:linear-gradient(to right, #f8fdf9 0%, #ffffff 100%);padding:8px 12px;border-left:3px solid #006633;">
+          <td colspan="10" style="background:linear-gradient(to right, #f8fdf9 0%, #ffffff 100%);padding:8px 12px;border-left:3px solid #006633;">
             <form class="dims-inline-form" data-lp-id="${escapeHtml(ci.lpId || "")}" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
               <div style="flex:1;min-width:200px;font-size:0.85rem;color:#6b7280;">
                 <strong style="color:#2c3e50;">${escapeHtml(desc.substring(0, 50))}${desc.length > 50 ? '...' : ''}</strong>
@@ -5004,6 +5065,78 @@
         } catch (err) {
           console.error("Failed to update container assignment", err);
           showValidation("error", "Failed to update container assignment.");
+        }
+      }
+
+      // Handle palletized select change
+      if (e.target.classList.contains("palletized-select")) {
+        const palletizedValue = e.target.value === "Yes";
+
+        try {
+          // Update Dataverse
+          await patchContainerItem(ciId, {
+            cr650_ispalletized: palletizedValue
+          });
+
+          // Update local state
+          ci.palletized = e.target.value;
+
+          // Recalculate gross weight with pallet weight
+          const palletsInput = tr.querySelector(".pallets-input");
+          const numberOfPallets = asNum(palletsInput?.value) || 0;
+          const palletWeight = palletizedValue ? (numberOfPallets * 19.38) : 0;
+
+          // Update the LP row's gross weight if needed
+          const lpIndex = buildLpRowIndex();
+          const lpRow = lpIndex.get((lpId || "").toLowerCase());
+          if (lpRow) {
+            recalcRow(lpRow);
+            await updateServerRowFromTr(lpRow, CURRENT_DCL_ID);
+          }
+
+          rebuildAssignmentTable();
+          renderContainerSummaries();
+          recomputeTotals();
+
+        } catch (err) {
+          console.error("Failed to update palletized status", err);
+          showValidation("error", "Failed to update palletized status.");
+        }
+      }
+
+      // Handle pallets input change
+      if (e.target.classList.contains("pallets-input")) {
+        const numberOfPallets = asNum(e.target.value) || 0;
+
+        try {
+          // Update Dataverse
+          await patchContainerItem(ciId, {
+            cr650_palletcount: numberOfPallets
+          });
+
+          // Update local state
+          ci.numberOfPallets = numberOfPallets;
+
+          // Recalculate gross weight with pallet weight
+          const palletizedSelect = tr.querySelector(".palletized-select");
+          const isPalletized = palletizedSelect?.value === "Yes";
+          const palletWeight = isPalletized ? (numberOfPallets * 19.38) : 0;
+
+          // Update the LP row's gross weight if needed
+          const lpIndex = buildLpRowIndex();
+          const lpRow = lpIndex.get((lpId || "").toLowerCase());
+          if (lpRow) {
+            recalcRow(lpRow);
+            await updateServerRowFromTr(lpRow, CURRENT_DCL_ID);
+          }
+
+          rebuildAssignmentTable();
+          renderContainerSummaries();
+          recomputeTotals();
+
+        } catch (err) {
+          console.error("Failed to update pallet count", err);
+          showValidation("error", "Failed to update pallet count.");
         }
       }
 
