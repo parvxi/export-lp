@@ -1455,7 +1455,9 @@
     // Group rows by order number + item code to avoid double-counting Order Qty for split items
     const orderItemGroups = new Map();
 
-    rows.forEach((r) => {
+    console.log("📊 recomputeTotals: Processing", rows.length, "rows");
+
+    rows.forEach((r, idx) => {
       const orderNo = (r.querySelector(".order-no")?.textContent || "").trim();
       const itemCode = (r.querySelector(".item-code")?.textContent || "").trim();
       const orderQty = asNum(r.querySelector(".order-qty")?.textContent);
@@ -1466,6 +1468,8 @@
       // Create a unique key for order + item combination
       const key = `${orderNo}|${itemCode}`;
 
+      console.log(`  Row ${idx + 1}: Order=${orderNo}, Item=${itemCode}, OrderQty=${orderQty}, LoadingQty=${loadingQty}, Key=${key}`);
+
       if (!orderItemGroups.has(key)) {
         orderItemGroups.set(key, {
           orderQty: orderQty, // Only count order qty once per unique order+item
@@ -1473,19 +1477,15 @@
           totalNet: 0,
           totalGross: 0
         });
+        console.log(`    → NEW group created for key: ${key}, orderQty: ${orderQty}`);
+      } else {
+        console.log(`    → EXISTING group for key: ${key}, NOT adding orderQty again`);
       }
 
       const group = orderItemGroups.get(key);
       group.totalLoadingQty += loadingQty;
       group.totalNet += netWeight;
       group.totalGross += grossWeight;
-
-      // Also update the pending qty for this row based on the group
-      const pendingQtyCell = r.querySelector(".pending-qty");
-      if (pendingQtyCell) {
-        // For individual row, show: Order Qty - Total Loading Qty for this group
-        // This will be recalculated after all rows are processed
-      }
 
       totalLoadingQty += loadingQty;
       totalNet += netWeight;
@@ -1494,9 +1494,12 @@
 
     // Calculate total order qty (unique, not double-counting splits)
     let totalOrderQty = 0;
-    orderItemGroups.forEach(group => {
+    orderItemGroups.forEach((group, key) => {
+      console.log(`  Group ${key}: orderQty=${group.orderQty}, totalLoadingQty=${group.totalLoadingQty}`);
       totalOrderQty += group.orderQty;
     });
+
+    console.log(`📊 FINAL: totalOrderQty=${totalOrderQty}, totalLoadingQty=${totalLoadingQty}`);
 
     // Now update pending qty for each row based on its group
     rows.forEach((r) => {
