@@ -1003,6 +1003,31 @@
     };
   }
 
+  // Helper function to distribute pallets proportionally when splitting items
+  // Returns an array of pallet counts that sum to the original total
+  function distributePallets(originalPallets, quantities) {
+    const totalQty = quantities.reduce((a, b) => a + b, 0);
+    if (totalQty === 0 || originalPallets <= 0) {
+      return quantities.map(() => 0);
+    }
+
+    // Calculate proportional pallets for each quantity
+    const proportionalPallets = quantities.map(qty =>
+      Math.floor(originalPallets * qty / totalQty)
+    );
+
+    // Distribute any remainder to ensure total matches
+    let remainder = originalPallets - proportionalPallets.reduce((a, b) => a + b, 0);
+    let i = 0;
+    while (remainder > 0 && i < proportionalPallets.length) {
+      proportionalPallets[i]++;
+      remainder--;
+      i++;
+    }
+
+    return proportionalPallets;
+  }
+
   // Creates a container-item row for a given LP row
   async function createContainerItemOnServer(lpId, quantity, containerGuidOpt, isSplitOpt) {
     if (!lpId || !isGuid(lpId)) {
@@ -5192,6 +5217,12 @@
             console.log("🔀 Starting 2-way split...");
             console.log("   Split into:", splitQty, "+", remainingQty);
 
+            // Capture original pallet info before split for proportional division
+            const originalPalletized = ci.palletized || "No";
+            const originalPallets = ci.numberOfPallets || 0;
+            const palletDistribution = distributePallets(originalPallets, [remainingQty, splitQty]);
+            console.log("   Pallet distribution:", originalPallets, "→", palletDistribution);
+
             // Update original LP
             const originalLoadingQtyInput = originalLpRow.querySelector(".loading-qty");
             if (originalLoadingQtyInput) {
@@ -5277,6 +5308,21 @@
               )
               .map(mapContainerItemRowToState);
 
+            // Apply proportional pallet distribution to split items
+            const originalCi = DCL_CONTAINER_ITEMS_STATE.find(c => c.id === ci.id);
+            if (originalCi) {
+              originalCi.palletized = originalPalletized;
+              originalCi.numberOfPallets = palletDistribution[0];
+            }
+            const newCi = DCL_CONTAINER_ITEMS_STATE.find(c =>
+              c.lpId && c.lpId.toLowerCase() === newLpId.toLowerCase() && c.id !== ci.id
+            );
+            if (newCi) {
+              newCi.palletized = originalPalletized;
+              newCi.numberOfPallets = palletDistribution[1];
+            }
+            console.log("   ✅ Applied pallet distribution to split items");
+
             // Refresh UI
             const tbody = Q("#itemsTableBody");
             if (tbody) {
@@ -5294,8 +5340,8 @@
 
             showValidation("success",
               `✅ Split successful!\n\n` +
-              `Original record: ${remainingQty} units\n` +
-              `New record: ${splitQty} units`
+              `Original record: ${remainingQty} units (${palletDistribution[0]} pallets)\n` +
+              `New record: ${splitQty} units (${palletDistribution[1]} pallets)`
             );
 
           } catch (err) {
@@ -5335,6 +5381,15 @@
             }
 
             console.log(`🔀 Starting ${distribution.length}-record split...`);
+
+            // Capture original pallet info before split for proportional division
+            const originalPalletized = ci.palletized || "No";
+            const originalPallets = ci.numberOfPallets || 0;
+            const palletDistribution = distributePallets(originalPallets, distribution);
+            console.log("   Pallet distribution:", originalPallets, "→", palletDistribution);
+
+            // Track new LP IDs for pallet assignment later
+            const newLpIds = [];
 
             // ===== STEP 1: UPDATE ORIGINAL LP & CONTAINER ITEM =====
             const firstQty = distribution[0];
@@ -5421,6 +5476,9 @@
               await new Promise(resolve => setTimeout(resolve, 500));
               await createContainerItemOnServer(newLpId, qty, null, true);
 
+              // Track new LP ID for pallet assignment
+              newLpIds.push(newLpId);
+
               console.log(`   ✅ Created record ${i + 1}`);
             }
 
@@ -5434,6 +5492,26 @@
                 item._cr650_dcl_master_number_value.toLowerCase() === CURRENT_DCL_ID.toLowerCase()
               )
               .map(mapContainerItemRowToState);
+
+            // Apply proportional pallet distribution to all split items
+            // First item (original) gets palletDistribution[0]
+            const originalCi = DCL_CONTAINER_ITEMS_STATE.find(c => c.id === ci.id);
+            if (originalCi) {
+              originalCi.palletized = originalPalletized;
+              originalCi.numberOfPallets = palletDistribution[0];
+            }
+            // Remaining items get palletDistribution[1], [2], etc.
+            for (let i = 0; i < newLpIds.length; i++) {
+              const lpIdLower = newLpIds[i].toLowerCase();
+              const newCi = DCL_CONTAINER_ITEMS_STATE.find(c =>
+                c.lpId && c.lpId.toLowerCase() === lpIdLower && c.id !== ci.id
+              );
+              if (newCi) {
+                newCi.palletized = originalPalletized;
+                newCi.numberOfPallets = palletDistribution[i + 1];
+              }
+            }
+            console.log("   ✅ Applied pallet distribution to all split items");
 
             // Refresh UI
             const tbody = Q("#itemsTableBody");
@@ -5454,7 +5532,7 @@
             showValidation('success',
               `✅ Split complete!\n\n` +
               `Created ${distribution.length} loading plan records:\n` +
-              distribution.map((q, i) => `  Record ${i + 1}: ${q} units`).join('\n') +
+              distribution.map((q, i) => `  Record ${i + 1}: ${q} units (${palletDistribution[i]} pallets)`).join('\n') +
               `\n\n` +
               `💡 Next step: Assign each record to a container in the Assignment Table below.`
             );
